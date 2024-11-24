@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+        
+        .left-panel {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .timer {
+            font-size: 48px;
+            font-family: monospace;
+            margin-bottom: 20px;
+        }
+        
+        .start-btn {
+            padding: 10px 30px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        
+        .start-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .right-panel {
+            width: 60%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dots-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
+            padding: 20px;
+            max-width: 500px;
+        }
+        
+        .dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            transition: opacity 0.3s;
+        }
+        
+        .dot.purple {
+            background-color: #9370DB;
+        }
+        
+        .dot.green {
+            background-color: #90EE90;
+        }
+        
+        .dot.active {
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <div class="timer" id="timer">00:00:00</div>
+        <button class="start-btn" id="startBtn">开始</button>
+    </div>
+    <div class="right-panel">
+        <div class="dots-container" id="dotsContainer"></div>
+    </div>
+
+    <script>
+        let totalSeconds = 0;
+        let currentSeconds = 0;
+        let timerInterval = null;
+        let isRunning = false;
+        
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const timeParam = urlParams.get('time');
+        
+        // Create dots
+        const dotsContainer = document.getElementById('dotsContainer');
+        for (let i = 0; i < 100; i++) {
+            const dot = document.createElement('div');
+            dot.className = `dot ${i < 50 ? 'purple' : 'green'}`;
+            dotsContainer.appendChild(dot);
+        }
+        
+        // Format time function
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+        
+        // Parse time string (HH:MM:SS) to seconds
+        function parseTimeString(timeStr) {
+            const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+        
+        // Update dots visualization
+        function updateDots() {
+            const progress = Math.floor((1 - currentSeconds / totalSeconds) * 100);
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.remove('active');
+                if (index === progress - 1) {
+                    dot.classList.add('active');
+                }
+            });
+        }
+        
+        // Initialize timer
+        if (timeParam) {
+            totalSeconds = parseTimeString(timeParam);
+            currentSeconds = totalSeconds;
+            document.getElementById('timer').textContent = formatTime(currentSeconds);
+        }
+        
+        // Start button click handler
+        document.getElementById('startBtn').addEventListener('click', function() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                this.textContent = '开始';
+                isRunning = false;
+                return;
+            }
+            
+            if (currentSeconds <= 0) {
+                currentSeconds = totalSeconds;
+            }
+            
+            isRunning = true;
+            this.textContent = '暂停';
+            
+            timerInterval = setInterval(() => {
+                if (currentSeconds > 0) {
+                    currentSeconds--;
+                    document.getElementById('timer').textContent = formatTime(currentSeconds);
+                    updateDots();
+                } else {
+                    clearInterval(timerInterval);
+                    this.textContent = '开始';
+                    isRunning = false;
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
