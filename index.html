@@ -92,7 +92,7 @@
      <audio id="alarmSound" src="res/alarm.WAV"></audio>
     <div class="left-panel">
         <div class="timer" id="timer">00:00:00</div>
-        <button class="start-btn" id="startBtn">开始</button>
+        <button class="start-btn" id="startBtn">Start</button>
     </div>
     <div class="right-panel">
         <div class="dots-container" id="dotsContainer"></div>
@@ -152,7 +152,7 @@
             isRunning = false;
             currentSeconds = totalSeconds;
             document.getElementById('timer').textContent = formatTime(currentSeconds);
-            startBtn.textContent = '开始';
+            startBtn.textContent = 'Start';
             updateDots();
             // 停止所有音频播放
             clockSound.pause();
@@ -164,7 +164,7 @@
         // 修改开始按钮的点击处理
         startBtn.addEventListener('click', function() {
             // 如果当前是"复位"状态
-            if (this.textContent === '复位') {
+            if (this.textContent === 'Reset') {
                 reset();
                 return;
             }
@@ -172,7 +172,7 @@
             // 如果正在运行，则暂停
             if (isRunning) {
                 clearInterval(timerInterval);
-                this.textContent = '开始';
+                this.textContent = 'Start';
                 isRunning = false;
                 // 停止时钟声音
                 clockSound.pause();
@@ -182,7 +182,7 @@
             
             // 开始计时
             isRunning = true;
-            this.textContent = '暂停';
+            this.textContent = 'Pause';
             
             timerInterval = setInterval(() => {
                 if (currentSeconds > 0) {
@@ -194,7 +194,7 @@
                     clockSound.play();
                 } else {
                     clearInterval(timerInterval);
-                    this.textContent = '复位';
+                    this.textContent = 'Reset';
                     isRunning = false;
                     // 播放闹铃声音
                     alarmSound.currentTime = 0;
