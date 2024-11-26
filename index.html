@@ -11,6 +11,10 @@
             display: flex;
             height: 100vh;
         }
+        @font-face {
+            font-family: '7segment';
+            src: url('res/7segmentbold.ttf') format('truetype');
+        }
         
         .left-panel {
             width: 40%;
@@ -23,7 +27,7 @@
         
         .timer {
             font-size: 48px;
-            font-family: monospace;
+            font-family: '7segment', monospace;
             margin-bottom: 20px;
         }
         
@@ -83,6 +87,9 @@
     </style>
 </head>
 <body>
+     <!-- 添加音频元素 -->
+     <audio id="clockSound" src="res/clock.WAV"></audio>
+     <audio id="alarmSound" src="res/alarm.WAV"></audio>
     <div class="left-panel">
         <div class="timer" id="timer">00:00:00</div>
         <button class="start-btn" id="startBtn">开始</button>
@@ -96,6 +103,10 @@
         let currentSeconds = 0;
         let timerInterval = null;
         let isRunning = false;
+        
+        const clockSound = document.getElementById('clockSound');
+        const alarmSound = document.getElementById('alarmSound');
+        const startBtn = document.getElementById('startBtn');
         
         // Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -135,26 +146,41 @@
             });
         }
         
-        // Initialize timer
-        if (timeParam) {
-            totalSeconds = parseTimeString(timeParam);
+        // Reset function
+        function reset() {
+            clearInterval(timerInterval);
+            isRunning = false;
             currentSeconds = totalSeconds;
             document.getElementById('timer').textContent = formatTime(currentSeconds);
+            startBtn.textContent = '开始';
+            updateDots();
+            // 停止所有音频播放
+            clockSound.pause();
+            clockSound.currentTime = 0;
+            alarmSound.pause();
+            alarmSound.currentTime = 0;
         }
         
-        // Start button click handler
-        document.getElementById('startBtn').addEventListener('click', function() {
+        // 修改开始按钮的点击处理
+        startBtn.addEventListener('click', function() {
+            // 如果当前是"复位"状态
+            if (this.textContent === '复位') {
+                reset();
+                return;
+            }
+            
+            // 如果正在运行，则暂停
             if (isRunning) {
                 clearInterval(timerInterval);
                 this.textContent = '开始';
                 isRunning = false;
+                // 停止时钟声音
+                clockSound.pause();
+                clockSound.currentTime = 0;
                 return;
             }
             
-            if (currentSeconds <= 0) {
-                currentSeconds = totalSeconds;
-            }
-            
+            // 开始计时
             isRunning = true;
             this.textContent = '暂停';
             
@@ -163,13 +189,37 @@
                     currentSeconds--;
                     document.getElementById('timer').textContent = formatTime(currentSeconds);
                     updateDots();
+                    // 播放时钟声音
+                    clockSound.currentTime = 0;
+                    clockSound.play();
                 } else {
                     clearInterval(timerInterval);
-                    this.textContent = '开始';
+                    this.textContent = '复位';
                     isRunning = false;
+                    // 播放闹铃声音
+                    alarmSound.currentTime = 0;
+                    alarmSound.play();
                 }
             }, 1000);
         });
+        
+        // 初始化
+        if (timeParam) {
+            totalSeconds = parseTimeString(timeParam);
+            currentSeconds = totalSeconds;
+            document.getElementById('timer').textContent = formatTime(currentSeconds);
+            updateDots();
+        }
+     </script>
+
+     <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LPRZXXGW03"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-LPRZXXGW03');
     </script>
 </body>
 </html>
