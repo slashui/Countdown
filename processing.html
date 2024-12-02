@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @font-face {
+            font-family: '7segment';
+            src: url('res/7segmentbold.ttf') format('truetype');
+        }
+        
+        .timer-font {
+            font-family: '7segment', monospace;
+        }
+
+        .circle-progress circle {
+            fill: none;
+            stroke: #8e71d4;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            transition: stroke-dashoffset 1s linear;
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center m-0 p-0 font-sans">
+     <!-- 添加音频元素 -->
+     <audio id="clockSound" src="res/clock.WAV"></audio>
+     <audio id="alarmSound" src="res/alarm.WAV"></audio>
+    <div class="relative flex flex-col items-center justify-center">
+        <svg class="absolute w-[600px] h-[600px] z-0 circle-progress" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45"></circle>
+        </svg>
+        <div class="timer-font text-9xl mb-5 z-10" id="timer">00:00:00</div>
+        <div class="buttons-container relative">
+            <button class="bg-green-500 hover:bg-green-600 text-white text-4xl py-2 px-24 rounded-full z-10 transition-colors duration-200" id="startBtn">START</button>
+        </div>
+    </div>
+
+    <script>
+        let totalSeconds = 0;
+        let currentSeconds = 0;
+        let timerInterval = null;
+        let isRunning = false;
+        
+        const clockSound = document.getElementById('clockSound');
+        const alarmSound = document.getElementById('alarmSound');
+        const startBtn = document.getElementById('startBtn');
+        
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const timeParam = urlParams.get('time');
+        
+        // Format time function
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+        
+        // Parse time string (HH:MM:SS) to seconds
+        function parseTimeString(timeStr) {
+            const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+        
+        // Update circle progress
+        function updateProgress() {
+            const circle = document.querySelector('.circle-progress circle');
+            const circumference = 2 * Math.PI * 45; // r = 45
+            circle.style.strokeDasharray = circumference;
+            const progress = currentSeconds / totalSeconds;
+            const offset = circumference * (1 - progress);
+            circle.style.strokeDashoffset = offset;
+        }
+        
+        // Reset function
+        function reset() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            currentSeconds = totalSeconds;
+            document.getElementById('timer').textContent = formatTime(currentSeconds);
+            startBtn.textContent = 'START';
+            updateProgress();
+            // 停止所有音频播放
+            clockSound.pause();
+            clockSound.currentTime = 0;
+            alarmSound.pause();
+            alarmSound.currentTime = 0;
+        }
+        
+        // 修改开始按钮的点击处理
+        startBtn.addEventListener('click', function() {
+            // 如果当前是"复位"状态
+            if (this.textContent === 'RESET') {
+                reset();
+                return;
+            }
+            
+            // 如果正在运行，则暂停
+            if (isRunning) {
+                clearInterval(timerInterval);
+                this.textContent = 'START';
+                isRunning = false;
+                // 停止时钟声音
+                clockSound.pause();
+                clockSound.currentTime = 0;
+                return;
+            }
+            
+            // 开始计时
+            isRunning = true;
+            this.textContent = 'PAUSE';
+            
+            timerInterval = setInterval(() => {
+                if (currentSeconds > 0) {
+                    currentSeconds--;
+                    document.getElementById('timer').textContent = formatTime(currentSeconds);
+                    updateProgress();
+                    // 播放时钟声音
+                    clockSound.currentTime = 0;
+                    clockSound.play();
+                } else {
+                    clearInterval(timerInterval);
+                    // 修改为显示两个按钮
+                    const buttonsHtml = `
+                        <button onclick="reset()" class="bg-green-500 hover:bg-green-600 text-white text-4xl py-2 px-24 rounded-full z-10 relative transition-colors duration-200 mr-4">RESTART</button>
+                        <button onclick="window.location.href='index.html'" class="bg-blue-500 hover:bg-blue-600 text-white text-4xl py-2 px-24 rounded-full z-10 relative transition-colors duration-200">RESET</button>
+                    `;
+                    document.querySelector('.buttons-container').innerHTML = buttonsHtml;
+                    isRunning = false;
+                    // 播放闹铃声音
+                    alarmSound.currentTime = 0;
+                    alarmSound.play();
+                }
+            }, 1000);
+        });
+        
+        // 初始化
+        if (timeParam) {
+            totalSeconds = parseTimeString(timeParam);
+            currentSeconds = totalSeconds;
+            document.getElementById('timer').textContent = formatTime(currentSeconds);
+            updateProgress();
+        }
+     </script>
+
+     <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LPRZXXGW03"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-LPRZXXGW03');
+    </script>
+</body>
+</html>

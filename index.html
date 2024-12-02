@@ -1,218 +1,65 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            display: flex;
-            height: 100vh;
+        select {
+            background-color: #1a1a1a;
         }
-        @font-face {
-            font-family: '7segment';
-            src: url('res/7segmentbold.ttf') format('truetype');
-        }
-        
-        .left-panel {
-            width: 40%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .timer {
-            font-size: 48px;
-            font-family: '7segment', monospace;
-            margin-bottom: 20px;
-        }
-        
-        .start-btn {
-            padding: 10px 30px;
-            font-size: 18px;
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        
-        .start-btn:hover {
-            background-color: #45a049;
-        }
-        
-        .right-panel {
-            width: 60%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .dots-container {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 5px;
-            padding: 20px;
-            max-width: 500px;
-        }
-        
-        .dot {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            transition: opacity 0.3s;
-        }
-        
-        .dot.purple {
-            background-color: #9370DB;
-        }
-        
-        .dot.green {
-            background-color: #90EE90;
-        }
-        
-        .dot.active {
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
+        select option {
+            background-color: #1a1a1a;
         }
     </style>
 </head>
-<body>
-     <!-- 添加音频元素 -->
-     <audio id="clockSound" src="res/clock.WAV"></audio>
-     <audio id="alarmSound" src="res/alarm.WAV"></audio>
-    <div class="left-panel">
-        <div class="timer" id="timer">00:00:00</div>
-        <button class="start-btn" id="startBtn">Start</button>
-    </div>
-    <div class="right-panel">
-        <div class="dots-container" id="dotsContainer"></div>
+<body class="bg-black text-white min-h-screen flex items-center justify-center m-0 p-0 font-sans">
+    <div class="flex flex-col items-center space-y-8">
+        <h1 class="text-6xl font-bold mb-12">Set Timer</h1>
+        <div class="flex items-center space-x-4">
+            <div class="flex flex-col items-center">
+                <label class="text-2xl mb-2">Hours</label>
+                <select id="hours" class="text-4xl p-4 rounded-lg border-2 border-gray-700 w-32">
+                    <option value="00">00</option>
+                </select>
+            </div>
+            <div class="text-6xl">:</div>
+            <div class="flex flex-col items-center">
+                <label class="text-2xl mb-2">Minutes</label>
+                <select id="minutes" class="text-4xl p-4 rounded-lg border-2 border-gray-700 w-32">
+                    <option value="00">00</option>
+                </select>
+            </div>
+        </div>
+        <button onclick="startTimer()" class="bg-green-500 hover:bg-green-600 text-white text-4xl py-4 px-32 rounded-full transition-colors duration-200 mt-12">START</button>
     </div>
 
     <script>
-        let totalSeconds = 0;
-        let currentSeconds = 0;
-        let timerInterval = null;
-        let isRunning = false;
-        
-        const clockSound = document.getElementById('clockSound');
-        const alarmSound = document.getElementById('alarmSound');
-        const startBtn = document.getElementById('startBtn');
-        
-        // Parse URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const timeParam = urlParams.get('time');
-        
-        // Create dots
-        const dotsContainer = document.getElementById('dotsContainer');
-        for (let i = 0; i < 100; i++) {
-            const dot = document.createElement('div');
-            dot.className = `dot ${i < 50 ? 'purple' : 'green'}`;
-            dotsContainer.appendChild(dot);
+        // 生成小时选项（0-24）
+        const hoursSelect = document.getElementById('hours');
+        for (let i = 1; i <= 24; i++) {
+            const option = document.createElement('option');
+            option.value = String(i).padStart(2, '0');
+            option.textContent = String(i).padStart(2, '0');
+            hoursSelect.appendChild(option);
         }
-        
-        // Format time function
-        function formatTime(seconds) {
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = seconds % 60;
-            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        }
-        
-        // Parse time string (HH:MM:SS) to seconds
-        function parseTimeString(timeStr) {
-            const [hours, minutes, seconds] = timeStr.split(':').map(Number);
-            return hours * 3600 + minutes * 60 + seconds;
-        }
-        
-        // Update dots visualization
-        function updateDots() {
-            const progress = Math.floor((1 - currentSeconds / totalSeconds) * 100);
-            const dots = document.querySelectorAll('.dot');
-            dots.forEach((dot, index) => {
-                dot.classList.remove('active');
-                if (index === progress - 1) {
-                    dot.classList.add('active');
-                }
-            });
-        }
-        
-        // Reset function
-        function reset() {
-            clearInterval(timerInterval);
-            isRunning = false;
-            currentSeconds = totalSeconds;
-            document.getElementById('timer').textContent = formatTime(currentSeconds);
-            startBtn.textContent = 'Start';
-            updateDots();
-            // 停止所有音频播放
-            clockSound.pause();
-            clockSound.currentTime = 0;
-            alarmSound.pause();
-            alarmSound.currentTime = 0;
-        }
-        
-        // 修改开始按钮的点击处理
-        startBtn.addEventListener('click', function() {
-            // 如果当前是"复位"状态
-            if (this.textContent === 'Reset') {
-                reset();
-                return;
-            }
-            
-            // 如果正在运行，则暂停
-            if (isRunning) {
-                clearInterval(timerInterval);
-                this.textContent = 'Start';
-                isRunning = false;
-                // 停止时钟声音
-                clockSound.pause();
-                clockSound.currentTime = 0;
-                return;
-            }
-            
-            // 开始计时
-            isRunning = true;
-            this.textContent = 'Pause';
-            
-            timerInterval = setInterval(() => {
-                if (currentSeconds > 0) {
-                    currentSeconds--;
-                    document.getElementById('timer').textContent = formatTime(currentSeconds);
-                    updateDots();
-                    // 播放时钟声音
-                    clockSound.currentTime = 0;
-                    clockSound.play();
-                } else {
-                    clearInterval(timerInterval);
-                    this.textContent = 'Reset';
-                    isRunning = false;
-                    // 播放闹铃声音
-                    alarmSound.currentTime = 0;
-                    alarmSound.play();
-                }
-            }, 1000);
-        });
-        
-        // 初始化
-        if (timeParam) {
-            totalSeconds = parseTimeString(timeParam);
-            currentSeconds = totalSeconds;
-            document.getElementById('timer').textContent = formatTime(currentSeconds);
-            updateDots();
-        }
-     </script>
 
-     <!-- Google tag (gtag.js) -->
+        // 生成分钟选项（0-59）
+        const minutesSelect = document.getElementById('minutes');
+        for (let i = 1; i < 60; i++) {
+            const option = document.createElement('option');
+            option.value = String(i).padStart(2, '0');
+            option.textContent = String(i).padStart(2, '0');
+            minutesSelect.appendChild(option);
+        }
+
+        // 开始计时器
+        function startTimer() {
+            const hours = hoursSelect.value;
+            const minutes = minutesSelect.value;
+            window.location.href = `processing.html?time=${hours}:${minutes}:00`;
+        }
+    </script>
+
+    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-LPRZXXGW03"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
